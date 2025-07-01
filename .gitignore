@@ -1,18 +1,35 @@
-# This .gitignore is appropriate for repositories deployed to GitHub Pages and using
-# a Gemfile as specified at https://github.com/github/pages-gem#conventional
+# Google Workspace (GWS) 関連ファイル
+# Google Docs, Sheets, Slides, Forms などの一時ファイル
+~$*.docx
+~$*.xlsx
+~$*.pptx
+~$*.gdoc
+~$*.gsheet
+~$*.gslides
+~$*.gform
 
-# Basic Jekyll gitignores (synchronize to Jekyll.gitignore)
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
+# Google Drive 関連
+.gdoc
+.gsheet
+.gslides
+.gform
+.gdraw
+.gmap
 
-# Additional Ruby/bundler ignore for when you run: bundle install
-/vendor
+# Google Workspace の一時ファイル
+*.tmp
+*.temp
+*.bak
 
-# Specific ignore for GitHub Pages
-# GitHub Pages will always use its own deployed version of pages-gem 
-# This means GitHub Pages will NOT use your Gemfile.lock and therefore it is
-# counterproductive to check this file into the repository.
-# Details at https://github.com/github/pages-gem/issues/768
-Gemfile.lock
+# Google Drive の同期フォルダ（もし使用している場合）
+Google Drive/
+My Drive/
+
+# Google Workspace の設定ファイル
+.google_workspace/
+.gws_config/
+
+# その他の一般的な無視ファイル
+.DS_Store
+Thumbs.db
+desktop.ini
