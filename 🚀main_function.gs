@@ -1,86 +1,85 @@
 /**
- * ProductSheetクラスの動作をテストするためのメイン関数
+ * ProductServiceクラスの動作をテストするための関数
+ * 実行前に、テスト用のデータが各シートに存在することを確認してください。
+ * - 01_products: product_id = 'prod_test_hirame'
+ * - 02_variants: product_id = 'prod_test_hirame' に紐づく variant_id = 'var_test_hirame_L_A_katsu'
+ * - 03_lots: variant_id = 'var_test_hirame_L_A_katsu' に紐づくロットデータ数件
  */
-function main_testProductSheet() {
-    Logger.log("--- ProductSheetのテストを開始します ---");
+function main_testProductService() {
+  Logger.log("--- ProductServiceのテストを開始します ---");
+
+  // --- テストデータの準備 ---
+  const productService = new ProductService();
+  const testProductId = 'prod_test_hirame';
+  const testVariantId = 'var_test_hirame_L_A_katsu';
+
+  // テストデータをクリーンにする（既存のテストデータを削除）
+  productService.productSheet.deleteProduct(testProductId);
   
-    // 1. クラスのインスタンス化
-    let productSheet;
-    try {
-      productSheet = new ProductSheet();
-      Logger.log("✅ 1. ProductSheetのインスタンス化に成功しました。");
-    } catch (e) {
-      Logger.log(`❌ 1. ProductSheetのインスタンス化に失敗しました: ${e.message}`);
-      return; // テスト中断
-    }
+  // 親Productの作成
+  productService.productSheet.createProduct({ product_id: testProductId, product_name: 'テスト用ヒラメ' });
   
-    // 2.【CREATE】新しい製品の作成
-    const newProductId = 'prod_test_sake';
-    const newProductData = {
-      product_id: newProductId,
-      product_name: 'テスト用の鮭',
-      default_origin_id: 'org_hokkaido',
-      category_id: 'cat_fresh'
-    };
-  
-    try {
-      // もしテスト用のデータが残っていたら、まず削除する
-      productSheet.deleteProduct(newProductId);
-  
-      const createdProduct = productSheet.createProduct(newProductData);
-      Logger.log(`✅ 2.【CREATE】製品を作成しました: ${JSON.stringify(createdProduct)}`);
-    } catch (e) {
-      Logger.log(`❌ 2.【CREATE】製品の作成に失敗しました: ${e.message}`);
-    }
-  
-    // 3.【READ】全製品の取得
-    try {
-      const allProducts = productSheet.getAllProducts();
-      Logger.log(`✅ 3.【READ】全製品を取得しました。件数: ${allProducts.length}件`);
-      // Logger.log(allProducts); // 全件表示はログが長くなるのでコメントアウト
-    } catch(e) {
-      Logger.log(`❌ 3.【READ】全製品の取得に失敗しました: ${e.message}`);
-    }
-  
-    // 4.【READ】ID指定での製品取得
-    try {
-      const foundProduct = productSheet.getProductById(newProductId);
-      if (foundProduct) {
-        Logger.log(`✅ 4.【READ】ID指定で製品を取得しました: ${JSON.stringify(foundProduct)}`);
+  // 子Variantの作成
+  productService.variantsSheet.createVariant({
+    variant_id: testVariantId,
+    product_id: testProductId,
+    variant_name: 'テスト用ヒラメ 大(A品/活締)'
+  });
+
+  // 孫Lotの作成（在庫2件、出荷済1件）
+  productService.lotsSheet.createLot({
+    variant_id: testVariantId,
+    status: '在庫',
+    package_count: 1,
+    actual_weight_kg: 1.2
+  });
+  productService.lotsSheet.createLot({
+    variant_id: testVariantId,
+    status: '在庫',
+    package_count: 1,
+    actual_weight_kg: 1.3
+  });
+  productService.lotsSheet.createLot({
+    variant_id: testVariantId,
+    status: '出荷済',
+    package_count: 1,
+    actual_weight_kg: 1.1
+  });
+  Logger.log("✅ テストデータの準備が完了しました。");
+  // --- テストデータの準備 完了 ---
+
+
+  // --- テストの実行 ---
+  try {
+    const jsonOutput = productService.getProductJsonById(testProductId);
+    if (jsonOutput) {
+      Logger.log(`✅ 階層JSONの生成に成功しました。`);
+      Logger.log(jsonOutput); // 生成されたJSONをログに出力
+
+      // 簡単な内容チェック
+      const result = JSON.parse(jsonOutput);
+      if (result.variants[0].stock_info.total_package_count === 2) {
+        Logger.log("✅ 在庫数の計算（2件）も正しいです。");
       } else {
-        Logger.log(`❌ 4.【READ】ID指定で製品が見つかりませんでした。ID: ${newProductId}`);
+        Logger.log(`❌ 在庫数の計算が不正です。期待値: 2, 結果: ${result.variants[0].stock_info.total_package_count}`);
       }
-    } catch(e) {
-      Logger.log(`❌ 4.【READ】ID指定での製品取得に失敗しました: ${e.message}`);
+
+    } else {
+      Logger.log(`❌ 階層JSONの生成に失敗しました。製品が見つかりません。`);
     }
-  
-    // 5.【UPDATE】製品の更新
-    const updateData = {
-      description: 'これは更新テスト用の説明文です。',
-      notes: '更新が成功しました。'
-    };
-    try {
-      const updatedProduct = productSheet.updateProduct(newProductId, updateData);
-      if (updatedProduct) {
-        Logger.log(`✅ 5.【UPDATE】製品を更新しました: ${JSON.stringify(updatedProduct)}`);
-      } else {
-        Logger.log(`❌ 5.【UPDATE】更新対象の製品が見つかりませんでした。ID: ${newProductId}`);
-      }
-    } catch (e) {
-      Logger.log(`❌ 5.【UPDATE】製品の更新に失敗しました: ${e.message}`);
-    }
-  
-    // 6.【DELETE】製品の削除
-    try {
-      const isDeleted = productSheet.deleteProduct(newProductId);
-      if (isDeleted) {
-        Logger.log(`✅ 6.【DELETE】製品を削除しました。ID: ${newProductId}`);
-      } else {
-        Logger.log(`❌ 6.【DELETE】削除対象の製品が見つかりませんでした。ID: ${newProductId}`);
-      }
-    } catch (e) {
-      Logger.log(`❌ 6.【DELETE】製品の削除に失敗しました: ${e.message}`);
-    }
-  
-    Logger.log("--- ProductSheetのテストを終了します ---");
+  } catch (e) {
+    Logger.log(`❌ テスト実行中にエラーが発生しました: ${e.message}\n${e.stack}`);
   }
+
+  // --- テストデータのクリーンアップ ---
+  // テストで作成したロットを削除
+  const lots = productService.lotsSheet.getLotsByVariantId(testVariantId);
+  lots.forEach(lot => productService.lotsSheet.deleteLot(lot.lot_id));
+  // テストで作成したバリアントを削除
+  productService.variantsSheet.deleteVariant(testVariantId);
+  // テストで作成した製品を削除
+  productService.productSheet.deleteProduct(testProductId);
+  Logger.log("✅ テストデータのクリーンアップが完了しました。");
+
+  Logger.log("--- ProductServiceのテストを終了します ---");
+}
